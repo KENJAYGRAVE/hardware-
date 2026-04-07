@@ -1,499 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ransy Weather Dashboard</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <title>Weather Dashboard</title>
+  <link rel="stylesheet" href="style.css">
 
-    body {
-      background: #f5f5f5;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #222;
-      min-height: 100vh;
-    }
-
-    /* ── LOADING SCREEN ── */
-    #loading-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: #fff;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 12px;
-    }
-    .loading-logo {
-      font-size: clamp(20px, 4vw, 36px);
-      font-weight: 700; text-align: center; color: #1a3d8a;
-      letter-spacing: 2px;
-    }
-    .loading-sub { font-size: 13px; color: #666; letter-spacing: 1px; }
-    .loading-bar-wrap {
-      width: 260px; height: 14px;
-      background: #e0e0e0; border-radius: 7px; overflow: hidden;
-    }
-    .loading-bar-fill {
-      height: 100%; width: 0%; background: #1a3d8a;
-      border-radius: 7px; transition: width 0.1s linear;
-    }
-    .loading-percent { font-size: 13px; color: #888; }
-    .loading-tip { font-size: 12px; color: #aaa; }
-
-    /* ── WRAPPER ── */
-    .wrapper {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
-    }
-
-    /* ── HEADER ── */
-    .header {
-      text-align: center;
-      padding: 28px 16px 16px;
-      border-bottom: 2px solid #ddd;
-      margin-bottom: 20px;
-    }
-    .header-icon { font-size: 32px; }
-    .header h1 {
-      font-size: clamp(18px, 4vw, 28px);
-      font-weight: 700;
-      color: #1a3d8a;
-      letter-spacing: 2px;
-      margin-top: 6px;
-    }
-    .subtitle {
-      font-size: 12px;
-      color: #888;
-      margin-top: 4px;
-      letter-spacing: 1px;
-    }
-
-    /* ── TICKER ── */
-    .ticker {
-      background: #1a3d8a;
-      color: #fff;
-      overflow: hidden;
-      white-space: nowrap;
-      padding: 6px 0;
-      margin-bottom: 20px;
-      border-radius: 4px;
-    }
-    .ticker-inner {
-      display: inline-block;
-      animation: scrollTicker 36s linear infinite;
-    }
-    .ticker-item { font-size: 12px; padding: 0 24px; }
-    @keyframes scrollTicker { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
-
-    /* ── INFO BOXES ── */
-    .info-boxes-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .info-box {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 14px 16px;
-      text-align: center;
-    }
-    .info-box-label { font-size: 11px; color: #888; letter-spacing: 1px; margin-bottom: 6px; }
-    .info-box-value { font-size: clamp(16px, 2.5vw, 22px); font-weight: 700; color: #1a3d8a; }
-    .info-box-sub { font-size: 10px; color: #aaa; margin-top: 4px; }
-    .info-box-track { font-size: clamp(10px, 1.4vw, 13px); font-weight: 600; color: #333; }
-    .info-box-music-controls { margin-top: 6px; display: flex; align-items: center; gap: 6px; justify-content: center; }
-    .music-btn {
-      font-size: 11px; padding: 3px 8px;
-      background: #1a3d8a; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer;
-    }
-    .music-btn:hover { background: #102870; }
-    .music-vol { font-size: 10px; color: #aaa; margin-top: 4px; display: flex; align-items: center; gap: 4px; justify-content: center; }
-    .music-note { display: inline-block; animation: noteBounce 1s ease-in-out infinite alternate; }
-    @keyframes noteBounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
-    @keyframes scrollText { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
-
-    /* ── ALERT ── */
-    .alert-toast {
-      display: flex; align-items: flex-start; gap: 10px;
-      background: #fff8e1;
-      border: 1px solid #f0c040;
-      border-left: 4px solid #f0c040;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 12px;
-      font-size: 13px;
-    }
-    .alert-icon { font-size: 18px; }
-    .alert-title { font-weight: 700; color: #b8860b; margin-bottom: 2px; }
-    .alert-msg { color: #7a6000; font-size: 12px; }
-    .alert-dismiss { cursor: pointer; color: #aaa; font-size: 12px; align-self: center; margin-left: auto; }
-
-    /* ── LIVE STATUS ── */
-    .live-status-bar { text-align: center; margin-bottom: 16px; }
-    .live-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: 12px; font-weight: 600; color: #333;
-    }
-    .live-dot { color: #27ae60; animation: blink 1s step-start infinite; font-size: 10px; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* ── STAT CARDS ── */
-    .cards-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-    .mc-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: center;
-    }
-    .temp-card { border-top: 4px solid #e74c3c; }
-    .hum-card  { border-top: 4px solid #2980b9; }
-    .card-icon { font-size: 32px; display: block; margin-bottom: 8px; }
-    .card-label { font-size: 11px; color: #888; letter-spacing: 1px; margin-bottom: 6px; }
-    .card-value { font-size: clamp(28px, 5vw, 42px); font-weight: 700; color: #222; }
-    .card-status { font-size: 10px; color: #aaa; margin-top: 6px; }
-
-    /* ── MINI STATS ── */
-    .mini-stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .mini-stat {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-    .ms-label { font-size: 10px; color: #999; letter-spacing: 1px; }
-    .ms-value { font-size: 18px; font-weight: 700; color: #1a3d8a; margin-top: 4px; }
-
-    /* ── SECTION HEAD ── */
-    .section-head {
-      font-size: 13px; font-weight: 700;
-      color: #1a3d8a;
-      letter-spacing: 2px;
-      border-left: 4px solid #1a3d8a;
-      padding-left: 10px;
-      margin: 24px 0 12px;
-    }
-
-    /* ── CHARTS ── */
-    .chart-container {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-    .chart-title { font-size: 12px; color: #888; letter-spacing: 1px; margin-bottom: 10px; }
-    .chart-wrap { position: relative; height: 180px; }
-    .export-btn {
-      margin-top: 10px;
-      font-size: 11px; padding: 5px 12px;
-      background: #1a3d8a; color: #fff;
-      border: none; border-radius: 4px; cursor: pointer;
-    }
-    .export-btn:hover { background: #102870; }
-
-    /* ── VILLAGER SUGGESTIONS ── */
-    .suggest-panel {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .suggest-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .suggest-header-left { display: flex; align-items: center; gap: 10px; }
-    .villager-icon { width: 32px; height: 32px; }
-    .suggest-title { font-size: 14px; font-weight: 700; color: #333; }
-    .suggest-subtitle { font-size: 11px; color: #aaa; }
-    .suggest-refresh {
-      font-size: 11px; padding: 4px 10px;
-      background: #f0f0f0; color: #555;
-      border: 1px solid #ddd; border-radius: 4px; cursor: pointer;
-    }
-    .suggest-refresh:hover { background: #e0e0e0; }
-    .comfort-section { margin-bottom: 14px; }
-    .comfort-label { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 6px; }
-    .comfort-score { font-weight: 700; color: #27ae60; }
-    .comfort-bar-bg { background: #eee; border-radius: 6px; height: 10px; overflow: hidden; margin-bottom: 4px; }
-    .comfort-bar-fill { width: 72%; height: 100%; background: #27ae60; border-radius: 6px; }
-    .comfort-ticks { display: flex; justify-content: space-between; font-size: 10px; color: #bbb; }
-    .comfort-tick.active { color: #27ae60; font-weight: 700; }
-    .suggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-
-    /* ── TABLE ── */
-    .readings-table {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      overflow: hidden;
-      margin-bottom: 24px;
-    }
-    .readings-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .readings-table th {
-      background: #1a3d8a; color: #fff;
-      padding: 10px 12px; text-align: left;
-      font-size: 11px; letter-spacing: 1px;
-    }
-    .readings-table td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; color: #333; }
-    .readings-table tr:last-child td { border-bottom: none; }
-    .readings-table tr:hover td { background: #f8f8ff; }
-
-    /* ── FOOTER ── */
-    .footer {
-      text-align: center;
-      font-size: 11px; color: #aaa;
-      border-top: 1px solid #eee;
-      padding-top: 16px;
-      line-height: 1.8;
-    }
-
-    @media (max-width: 540px) {
-      .mini-stats { grid-template-columns: repeat(2, 1fr); }
-      .cards-row  { grid-template-columns: 1fr; }
-    }
-  </style>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
-<div id="loading-screen">
-  <div class="loading-logo">⛅ RANSY WEATHER<br>DASHBOARD</div>
-  <div class="loading-sub">ESP32 + DHT11 SENSOR NETWORK</div>
-  <div class="loading-bar-wrap">
-    <div class="loading-bar-fill" id="loadingBar"></div>
-  </div>
-  <div class="loading-percent" id="loadingPct">0%</div>
-  <div class="loading-tip" id="loadingTip">Generating world...</div>
-</div>
+  <h1>🌤️ WEATHER DASHBOARD</h1>
 
-<!-- MAIN DASHBOARD -->
-<div class="wrapper">
+  <div class="container">
+    <div class="card">
+      <h2>🌡️ Temperature</h2>
+      <p id="temp">-- °C</p>
+    </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <span class="header-icon">⛅</span>
-    <h1>RANSY WEATHER DASHBOARD</h1>
-    <div class="subtitle">⛏ ESP32 + DHT11 SENSOR · LIVE DATA · MINECRAFT EDITION ⛏</div>
-  </div>
-
-  <!-- TICKER -->
-  <div class="ticker">
-    <div class="ticker-inner">
-      <span class="ticker-item">· 🌡️ TEMPERATURE · + · 💧 HUMIDITY SENSOR · 🌡️ TEMPERATURE  · + · 💧 HUMIDITY SENSOR · </span>
-      <span class="ticker-item">🌡️ TEMPERATURE · 💧 HUMIDITY · ☀️ SKY UPDATES WITH LOCAL TIME · ♪ PRESS PLAY FOR MINECRAFT MUSIC</span>
-      <span class="ticker-item">⛏ RANSY WEATHER DASHBOARD · ESP32 + DHT11 · UPDATES EVERY 3 SEC</span>
-      <span class="ticker-item">🌡️ TEMPERATURE · 💧 HUMIDITY · ☀️ SKY UPDATES WITH LOCAL TIME · ♪ PRESS PLAY FOR MINECRAFT MUSIC</span>
+    <div class="card">
+      <h2>💧 Humidity</h2>
+      <p id="humidity">-- %</p>
     </div>
   </div>
 
-  <!-- INFO BOXES -->
-  <div class="info-boxes-row">
-    <div class="info-box">
-      <div class="info-box-label">⛏ TOTAL READINGS</div>
-      <div class="info-box-value" id="totalReadings">--</div>
-      <div class="info-box-sub">ALL TIME</div>
-    </div>
-    <div class="info-box" id="currentReadingsBox">
-      <div class="info-box-label">📡 LAST UPDATE</div>
-      <div class="info-box-value" id="lastUpdate" style="font-size:clamp(8px,1.3vw,13px);">--:--:--</div>
-      <div class="info-box-sub" id="lastUpdateSub">WAITING FOR ESP32</div>
-    </div>
-    <div class="info-box">
-      <div class="info-box-label" id="timeBadgePeriod2">⛅ LOADING...</div>
-      <div class="info-box-value" id="timeBadgeTime2">--:--:--</div>
-      <div class="info-box-sub">PHILIPPINE TIME</div>
-    </div>
-    <div class="info-box info-box-music">
-      <div class="info-box-label"><span id="musicNote" class="music-note">♪</span> NOW PLAYING</div>
-      <div class="info-box-track">
-        <span id="musicTitle" style="display:inline-block; animation:scrollText 10s linear infinite; white-space:nowrap;">Pigstep — Lena Raine</span>
-      </div>
-      <div class="info-box-music-controls">
-        <span id="musicStatus" style="font-size:10px; color:#666;">⏸ PAUSED</span>
-        <button class="music-btn" id="musicToggle" onclick="toggleMusic()">[ ▶ PLAY ]</button>
-      </div>
-      <div class="music-vol">
-        VOL:
-        <input type="range" class="vol-bar" id="volSlider" min="0" max="100" value="35" step="1"
-               oninput="setVolume(this.value)" style="width:50px;cursor:pointer;"/>
-        <span id="volDisplay">35%</span>
-      </div>
-    </div>
+  <!-- TEMPERATURE GRAPH -->
+  <div class="graph-container">
+    <h2>🌡️ Temperature Graph</h2>
+    <canvas id="tempChart"></canvas>
   </div>
 
-  <!-- ALERT -->
-  <div class="alert-toast" id="alertToast">
-    <div class="alert-icon">⚠️</div>
-    <div style="flex:1;">
-      <div class="alert-title">!! HUMIDITY WARNING !!</div>
-      <div class="alert-msg">Current humidity 78% — above comfort zone. Consider ventilating the area or using a dehumidifier.</div>
-    </div>
-    <div class="alert-dismiss" onclick="dismissAlert()">[ X ]</div>
+  <!-- HUMIDITY GRAPH -->
+  <div class="graph-container">
+    <h2>💧 Humidity Graph</h2>
+    <canvas id="humChart"></canvas>
   </div>
 
-  <!-- LIVE STATUS -->
-  <div class="live-status-bar">
-    <div class="live-badge" id="liveBadge">
-      <span class="live-dot" id="liveDot">●</span>
-      <span id="liveStatus">CONNECTING...</span>
-    </div>
-  </div>
-
-  <!-- STAT CARDS -->
-  <div class="cards-row">
-    <div class="mc-card temp-card">
-      <span class="card-icon">🌡️</span>
-      <div class="card-label">:: TEMPERATURE</div>
-      <div class="card-value" id="tempValue">28.4°C</div>
-      <div class="card-status">● LIVE · ESP32 SENSOR</div>
-    </div>
-    <div class="mc-card hum-card">
-      <span class="card-icon">💧</span>
-      <div class="card-label">:: HUMIDITY</div>
-      <div class="card-value" id="humValue">78%</div>
-      <div class="card-status">● LIVE · DHT11 SENSOR</div>
-    </div>
-  </div>
-
-  <!-- MINI STATS -->
-  <div class="mini-stats">
-    <div class="mini-stat">
-      <div class="ms-label">TEMP MAX</div>
-      <div class="ms-value" id="tempMax">31°C</div>
-    </div>
-    <div class="mini-stat">
-      <div class="ms-label">TEMP MIN</div>
-      <div class="ms-value" id="tempMin">24°C</div>
-    </div>
-    <div class="mini-stat">
-      <div class="ms-label">HUM MAX</div>
-      <div class="ms-value" id="humMax">88%</div>
-    </div>
-    <div class="mini-stat">
-      <div class="ms-label">HUM MIN</div>
-      <div class="ms-value" id="humMin">70%</div>
-    </div>
-  </div>
-
-  <!-- CHARTS -->
-  <div class="section-head">HISTORICAL DATA</div>
-  <div class="chart-container">
-    <div class="chart-title">▸ TEMPERATURE (°C)</div>
-    <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
-    <button class="export-btn" onclick="downloadCSV('temperature')">⬇ EXPORT TEMP CSV</button>
-  </div>
-  <div class="chart-container">
-    <div class="chart-title">▸ HUMIDITY (%)</div>
-    <div class="chart-wrap"><canvas id="humChart"></canvas></div>
-    <button class="export-btn" onclick="downloadCSV('humidity')">⬇ EXPORT HUM CSV</button>
-  </div>
-
-  <!-- VILLAGER SUGGESTIONS -->
-  <div class="section-head">VILLAGER SUGGESTIONS</div>
-  <div class="suggest-panel">
-    <div class="suggest-header">
-      <div class="suggest-header-left">
-        <svg class="villager-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5"  y="1"  width="6" height="6" fill="#c68642"/>
-          <rect x="6"  y="2"  width="1" height="1" fill="#1a1a1a"/>
-          <rect x="9"  y="2"  width="1" height="1" fill="#1a1a1a"/>
-          <rect x="6"  y="4"  width="4" height="1" fill="#7a4000"/>
-          <rect x="4"  y="7"  width="8" height="5" fill="#5c85d6"/>
-          <rect x="5"  y="3"  width="1" height="1" fill="#a05c20"/>
-          <rect x="10" y="3"  width="1" height="1" fill="#a05c20"/>
-          <rect x="2"  y="7"  width="2" height="4" fill="#5c85d6"/>
-          <rect x="12" y="7"  width="2" height="4" fill="#5c85d6"/>
-          <rect x="5"  y="12" width="2" height="3" fill="#7a5230"/>
-          <rect x="9"  y="12" width="2" height="3" fill="#7a5230"/>
-          <rect x="6"  y="0"  width="4" height="2" fill="#3a1a00"/>
-        </svg>
-        <div>
-          <div class="suggest-title">WEATHER ADVISOR</div>
-          <div class="suggest-subtitle">HMM... BASED ON CURRENT CONDITIONS</div>
-        </div>
-      </div>
-      <button class="suggest-refresh" onclick="refreshSuggestions()">⟳ REFRESH</button>
-    </div>
-    <div class="comfort-section">
-      <div class="comfort-label">
-        <span>COMFORT INDEX</span>
-        <span class="comfort-score">72 / 100</span>
-      </div>
-      <div class="comfort-bar-bg">
-        <div class="comfort-bar-fill"></div>
-      </div>
-      <div class="comfort-ticks">
-        <span class="comfort-tick">TOO COLD</span>
-        <span class="comfort-tick active">COMFORTABLE</span>
-        <span class="comfort-tick">TOO HOT</span>
-      </div>
-    </div>
-    <div class="suggest-grid" id="suggestGrid"></div>
-  </div>
-
-  <!-- RECENT READINGS -->
-  <div class="section-head">RECENT READINGS</div>
-  <div class="readings-table">
+  <!-- TABLE -->
+  <div class="table-container">
+    <h2>Recent Readings</h2>
     <table>
       <thead>
         <tr>
-          <th>TIME</th>
-          <th>TEMP (°C)</th>
-          <th>HUMIDITY (%)</th>
-          <th>STATUS</th>
+          <th>Time</th>
+          <th>Temp (°C)</th>
+          <th>Humidity (%)</th>
         </tr>
       </thead>
-      <tbody id="readings-body"></tbody>
+      <tbody id="logTable"></tbody>
     </table>
   </div>
 
-  <div class="footer">
-    ⛏ RANSY WEATHER DASHBOARD · ESP32 + DHT11 · MINECRAFT EDITION<br>
-    ♪ PIGSTEP (REMIX) MUSIC · UPDATES EVERY 3 SEC ⛏
-  </div>
-
-</div><!-- end wrapper -->
-
-<!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<!-- Dashboard Logic -->
-<script src="script.js"></script>
-
-<script>
-  // Loading screen
-  let pct = 0;
-  const bar = document.getElementById('loadingBar');
-  const pctEl = document.getElementById('loadingPct');
-  const tips = ['Connecting to ESP32...','Loading sensor data...','Rendering dashboard...','Almost ready...'];
-  let tipIdx = 0;
-  const tipEl = document.getElementById('loadingTip');
-  const iv = setInterval(() => {
-    pct += Math.random() * 18 + 4;
-    if (pct >= 100) { pct = 100; clearInterval(iv); setTimeout(() => { document.getElementById('loading-screen').style.display='none'; }, 400); }
-    bar.style.width = pct + '%';
-    pctEl.textContent = Math.round(pct) + '%';
-    if (pct > tipIdx * 25 + 20) { tipEl.textContent = tips[tipIdx] || ''; tipIdx++; }
-  }, 180);
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
